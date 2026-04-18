@@ -1,0 +1,18 @@
+{
+  "generated_at": "",
+  "calendar_date": "--",
+  "indices": [],
+  "market_summary": {
+    "limit_up_count": 0,
+    "gt_7_count": 0,
+    "limit_down_count": 0
+  },
+  "available_dates": [],
+  "sections": {
+    "limit_up_pullback": {},
+    "low_absorption": {},
+    "graphic_pattern": {},
+    "recommendations": {},
+    "hotspots": []
+  }
+}
