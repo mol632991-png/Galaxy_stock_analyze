@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional, Sequence, Tuple
@@ -68,13 +69,20 @@ def _to_tx_symbol(code: str) -> str:
 
 
 def fetch_spot_data() -> pd.DataFrame:
-    spot_df = ak.stock_zh_a_spot_em()
-    if spot_df is None or spot_df.empty:
-        raise RuntimeError("A股实时行情接口返回为空。")
-    spot_df = spot_df.copy()
-    spot_df["代码"] = spot_df["代码"].astype(str).str.zfill(6)
-    spot_df = _clean_numeric(spot_df, ["最新价", "涨跌幅", "涨跌额", "成交量", "成交额", "振幅", "最高", "最低", "今开", "昨收", "量比", "换手率", "市盈率-动态", "市净率", "总市值", "流通市值", "涨速", "5分钟涨跌", "60日涨跌幅", "年初至今涨跌幅"])
-    return spot_df
+    """获取全市场行情，带重试机制以应对 GitHub Actions 超时问题"""
+    for attempt in range(3):
+        try:
+            spot_df = ak.stock_zh_a_spot_em()
+            if spot_df is not None and not spot_df.empty:
+                spot_df = spot_df.copy()
+                spot_df["代码"] = spot_df["代码"].astype(str).str.zfill(6)
+                spot_df = _clean_numeric(spot_df, ["最新价", "涨跌幅", "涨跌额", "成交量", "成交额", "振幅", "最高", "最低", "今开", "昨收", "量比", "换手率", "市盈率-动态", "市净率", "总市值", "流通市值", "涨速", "5分钟涨跌", "60日涨跌幅", "年初至今涨跌幅"])
+                return spot_df
+        except Exception as e:
+            print(f"尝试获取行情失败 (第 {attempt + 1} 次): {e}")
+            if attempt < 2:
+                time.sleep(5)
+    raise RuntimeError("A股实时行情接口在多次尝试后依然返回为空或超时。")
 
 
 def _latest_financial_report() -> pd.DataFrame:
