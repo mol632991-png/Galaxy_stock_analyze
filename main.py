@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,6 +17,16 @@ OUTPUT_DIR = Path('outputs')
 DATA_DIR = Path('data')
 HISTORY_FILE = OUTPUT_DIR / 'strategy_history.json'
 DASHBOARD_FILE = DATA_DIR / 'dashboard_data.json'
+
+
+def clean_data(obj: Any) -> Any:
+    if isinstance(obj, float) and math.isnan(obj):
+        return None
+    if isinstance(obj, dict):
+        return {k: clean_data(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_data(v) for v in obj]
+    return obj
 
 
 def ensure_dirs() -> None:
@@ -228,6 +239,7 @@ def main() -> None:
             'hotspots': build_hotspot_section(risk_df),
         },
     }
+    dashboard_data = clean_data(dashboard_data)
     DASHBOARD_FILE.write_text(json.dumps(dashboard_data, ensure_ascii=False, indent=2), encoding='utf-8')
     (OUTPUT_DIR / 'latest_stock_pool.md').write_text(build_markdown_report(run_date, strategy_results), encoding='utf-8')
     print(f'页面数据生成完成: {DASHBOARD_FILE.as_posix()}')
