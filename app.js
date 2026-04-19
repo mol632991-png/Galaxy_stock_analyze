@@ -1,4 +1,4 @@
-const DATA_URL = './data/dashboard_data.json';
+const DATA_URL = 'data/dashboard_data.json';
 
 const sectionMeta = {
   limit_up_pullback: { analysisKey: 'fundamental_analysis' },
