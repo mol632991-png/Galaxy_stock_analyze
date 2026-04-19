@@ -1,0 +1,33 @@
+{
+  "strategies": {
+    "limit_up_pullback": {
+      "2026-04-19": [
+        {
+          "code": "002940",
+          "name": "昂利康",
+          "strategy_tags": "涨停选股",
+          "selected_reason": "涨停强势、主板、上市满一年，且价格位于120日区间80%压制线下方。",
+          "selected_score": 45.72,
+          "selected_mode": "limit_up_pullback",
+          "selected_rank": 1
+        },
+        {
+          "code": "002796",
+          "name": "世嘉科技",
+          "strategy_tags": "涨停选股",
+          "selected_reason": "涨停强势、主板、上市满一年，且价格位于120日区间80%压制线下方。",
+          "selected_score": 29.36,
+          "selected_mode": "limit_up_pullback",
+          "selected_rank": 2
+        }
+      ]
+    },
+    "low_absorption": {
+      "2026-04-19": []
+    },
+    "graphic_pattern": {
+      "2026-04-19": []
+    }
+  },
+  "updated_at": "2026-04-19 12:18:50"
+}

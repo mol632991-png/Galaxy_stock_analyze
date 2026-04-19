@@ -1,18 +1,168 @@
 {
-  "generated_at": "",
-  "calendar_date": "--",
-  "indices": [],
+  "generated_at": "2026-04-19 12:18:50",
+  "calendar_date": "2026年04月19日",
+  "indices": [
+    {
+      "code": "000001",
+      "name": "上证指数",
+      "price": 4051.43,
+      "pct_change": -0.1,
+      "change": -4.12
+    },
+    {
+      "code": "399001",
+      "name": "深证成指",
+      "price": 14885.42,
+      "pct_change": 0.6,
+      "change": 89.09
+    },
+    {
+      "code": "399006",
+      "name": "创业板指",
+      "price": 3678.29,
+      "pct_change": 1.43,
+      "change": 52.02
+    }
+  ],
   "market_summary": {
-    "limit_up_count": 0,
-    "gt_7_count": 0,
-    "limit_down_count": 0
+    "limit_up_count": 100,
+    "gt_7_count": 178,
+    "limit_down_count": 6
   },
-  "available_dates": [],
+  "available_dates": [
+    "2026-04-19"
+  ],
   "sections": {
-    "limit_up_pullback": {},
-    "low_absorption": {},
-    "graphic_pattern": {},
-    "recommendations": {},
-    "hotspots": []
+    "limit_up_pullback": {
+      "2026-04-19": [
+        {
+          "code": "002940",
+          "name": "昂利康",
+          "price": 39.16,
+          "pct_change": 10.0,
+          "industry": NaN,
+          "prev_pct_change": 10.01,
+          "prev2_pct_change": 6.24,
+          "fundamental_analysis": "ROE 0.00%，营收同比 0.00%，净利同比 0.00%，PE 76.26，PB 4.96。",
+          "technical_analysis": "现价 39.16，MA20 31.95，MA60 32.06，RSI14 68.47，昨日涨跌幅 10.01%，前日涨跌幅 6.24%。",
+          "strategy_tags": [
+            "limit_up_pullback",
+            "涨停选股"
+          ],
+          "risk_score": 0,
+          "risk_summary": "未发现明显风险",
+          "risk_items": [
+            "未发现明显风险"
+          ],
+          "selected_reason": "涨停强势、主板、上市满一年，且价格位于120日区间80%压制线下方。",
+          "selected_rank": 1,
+          "selected_mode": "limit_up_pullback"
+        },
+        {
+          "code": "002796",
+          "name": "世嘉科技",
+          "price": 53.35,
+          "pct_change": 10.0,
+          "industry": NaN,
+          "prev_pct_change": -0.14,
+          "prev2_pct_change": -2.61,
+          "fundamental_analysis": "ROE 0.00%，营收同比 0.00%，净利同比 0.00%，PE -197.94，PB 15.72。",
+          "technical_analysis": "现价 53.35，MA20 49.20，MA60 49.81，RSI14 66.95，昨日涨跌幅 -0.14%，前日涨跌幅 -2.61%。",
+          "strategy_tags": [
+            "limit_up_pullback",
+            "涨停选股"
+          ],
+          "risk_score": 1,
+          "risk_summary": "估值异常",
+          "risk_items": [
+            "估值异常"
+          ],
+          "selected_reason": "涨停强势、主板、上市满一年，且价格位于120日区间80%压制线下方。",
+          "selected_rank": 2,
+          "selected_mode": "limit_up_pullback"
+        }
+      ]
+    },
+    "low_absorption": {
+      "2026-04-19": []
+    },
+    "graphic_pattern": {
+      "2026-04-19": []
+    },
+    "recommendations": {
+      "2026-04-19": []
+    },
+    "hotspots": [
+      {
+        "name": "未知行业",
+        "heat_score": 1558.19,
+        "avg_pct": 2.23,
+        "total_amount": 9918.62,
+        "stock_count": 379
+      },
+      {
+        "name": "通信设备",
+        "heat_score": 56.8,
+        "avg_pct": 5.63,
+        "total_amount": 423.72,
+        "stock_count": 3
+      },
+      {
+        "name": "半导体",
+        "heat_score": 49.07,
+        "avg_pct": 2.52,
+        "total_amount": 319.1,
+        "stock_count": 8
+      },
+      {
+        "name": "消费电子",
+        "heat_score": 31.04,
+        "avg_pct": 7.32,
+        "total_amount": 88.53,
+        "stock_count": 1
+      },
+      {
+        "name": "塑料",
+        "heat_score": 27.95,
+        "avg_pct": 8.46,
+        "total_amount": 7.1,
+        "stock_count": 1
+      },
+      {
+        "name": "多元金融",
+        "heat_score": 24.91,
+        "avg_pct": 6.85,
+        "total_amount": 29.46,
+        "stock_count": 1
+      },
+      {
+        "name": "工业金属",
+        "heat_score": 21.55,
+        "avg_pct": 3.76,
+        "total_amount": 28.46,
+        "stock_count": 4
+      },
+      {
+        "name": "通用设备",
+        "heat_score": 17.95,
+        "avg_pct": 3.71,
+        "total_amount": 35.1,
+        "stock_count": 2
+      },
+      {
+        "name": "汽车零部件",
+        "heat_score": 17.63,
+        "avg_pct": 3.49,
+        "total_amount": 14.32,
+        "stock_count": 3
+      },
+      {
+        "name": "专用设备",
+        "heat_score": 17.31,
+        "avg_pct": 4.2,
+        "total_amount": 33.92,
+        "stock_count": 1
+      }
+    ]
   }
 }
