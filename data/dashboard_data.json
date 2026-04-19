@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-19 12:18:50",
+  "generated_at": "2026-04-19 17:31:17",
   "calendar_date": "2026年04月19日",
   "indices": [
     {
@@ -40,7 +40,7 @@
           "name": "昂利康",
           "price": 39.16,
           "pct_change": 10.0,
-          "industry": NaN,
+          "industry": null,
           "prev_pct_change": 10.01,
           "prev2_pct_change": 6.24,
           "fundamental_analysis": "ROE 0.00%，营收同比 0.00%，净利同比 0.00%，PE 76.26，PB 4.96。",
@@ -63,7 +63,7 @@
           "name": "世嘉科技",
           "price": 53.35,
           "pct_change": 10.0,
-          "industry": NaN,
+          "industry": null,
           "prev_pct_change": -0.14,
           "prev2_pct_change": -2.61,
           "fundamental_analysis": "ROE 0.00%，营收同比 0.00%，净利同比 0.00%，PE -197.94，PB 15.72。",
@@ -95,10 +95,10 @@
     "hotspots": [
       {
         "name": "未知行业",
-        "heat_score": 1558.19,
-        "avg_pct": 2.23,
-        "total_amount": 9918.62,
-        "stock_count": 379
+        "heat_score": 1541.98,
+        "avg_pct": 2.17,
+        "total_amount": 9843.43,
+        "stock_count": 374
       },
       {
         "name": "通信设备",
@@ -143,6 +143,13 @@
         "stock_count": 4
       },
       {
+        "name": "其他电子Ⅱ",
+        "heat_score": 17.96,
+        "avg_pct": 3.95,
+        "total_amount": 26.43,
+        "stock_count": 2
+      },
+      {
         "name": "通用设备",
         "heat_score": 17.95,
         "avg_pct": 3.71,
@@ -155,13 +162,6 @@
         "avg_pct": 3.49,
         "total_amount": 14.32,
         "stock_count": 3
-      },
-      {
-        "name": "专用设备",
-        "heat_score": 17.31,
-        "avg_pct": 4.2,
-        "total_amount": 33.92,
-        "stock_count": 1
       }
     ]
   }
