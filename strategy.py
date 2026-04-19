@@ -68,23 +68,24 @@ def _select_quality_growth(df: pd.DataFrame) -> pd.DataFrame:
 
 def _select_limit_up_pullback(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    # 涨停回踩逻辑：近期(5日内)有过涨停，目前正在回踩或震荡，且价格还没突破前高
-    working = working[working['主板'] & (working['上市天数'] > 120) & (working['had_recent_limit_up'] == True) & (working['最新价'] < working['high_120'] * 0.98)].copy()
+    # 恢复筛选当天涨停股票 (涨跌幅 > 9.8)
+    # 条件：主板、价格 > 5、价格在黄金分割线 0.8 以下 (这里使用 low_120+(high_120-low_120)*0.8)
+    working['支撑线'] = working['low_120'] + (working['high_120'] - working['low_120']) * 0.8
+    working = working[working['主板'] & (working['涨跌幅'] >= 9.8) & (working['最新价'] > 5) & (working['最新价'] < working['支撑线'])].copy()
     if working.empty:
         return working
-    # 评分逻辑：近期涨停强度 + 离底部距离 + 资金流
-    working['strategy_score'] = (working['had_recent_limit_up'].astype(int) * 30 + (working['high_120'] / working['最新价'] - 1.0) * 15 + working['fund_flow_ratio'].fillna(0) * 5 + (working['最新价'] / working['low_120'] - 1.0) * 5 - working['risk_score'] * 8).round(2)
-    return _finalize(working, 'limit_up_pullback', lambda _: '涨停选股', lambda _: '近期出现涨停强势信号，目前进入回踩巩固期，具备二次起跳潜力。')
+    working['strategy_score'] = (working['涨跌幅'] * 5 + working['成交额'] / 50000000 * 2 - working['risk_score'] * 10).round(2)
+    return _finalize(working, 'limit_up_pullback', lambda _: '今日涨停', lambda _: '当日涨停强势股票，且价格尚未突破120日高点压制区间。')
 
 
 def _select_fund_flow(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    # 资金流逻辑：主力净流入额和占比双高，且当日涨幅不宜过高（防止追高）
-    working = working[(working['今日主力净流入-占比'] > 5) & (working['今日主力净流入-净额'] > 10000000) & (working['涨跌幅'] < 7)].copy()
+    # 新增：主板 + 价格 > 27
+    working = working[working['主板'] & (working['最新价'] > 27) & (working['今日主力净流入-占比'] > 5) & (working['今日主力净流入-净额'] > 8000000) & (working['涨跌幅'] < 7)].copy()
     if working.empty:
         return working
     working['strategy_score'] = (working['今日主力净流入-占比'] * 3.5 + working['今日主力净流入-净额'] / 1000000 * 0.5 + working['成交额'] / 50000000 * 2 - working['risk_score'] * 10).round(2)
-    return _finalize(working, 'fund_flow', lambda _: '资金流', lambda _: '主力资金大规模净流入，机构/大单扫盘迹象明显，具备资金推动动力。')
+    return _finalize(working, 'fund_flow', lambda _: '大资金流入', lambda _: '主力资金显著净流入的高价主板个股，显示机构建仓意图。')
 
 
 def _low_absorption_tag(row: pd.Series) -> str:
@@ -104,8 +105,8 @@ def _select_low_absorption(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
     working['黄金强势分割线'] = working['hour_low_120'] + (working['hour_high_120'] - working['hour_low_120']) * 0.38
     working['公式命中数'] = working['signal_fund_flow'].astype(int) + working['signal_upward_10d'].astype(int) + working['signal_short_buy_20d'].astype(int) + working['signal_hourly_60_3pct'].astype(int)
-    # 放宽价格限制到 5 元
-    working = working[working['主板'] & (working['最新价'] >= 5) & (working['最新价'] < working['黄金强势分割线']) & (working['公式命中数'] >= 1)].copy()
+    # 满足主板 + 价格 > 27 (这是用户要求的硬性限制)
+    working = working[working['主板'] & (working['最新价'] > 27) & (working['最新价'] < working['黄金强势分割线']) & (working['公式命中数'] >= 1)].copy()
     if working.empty:
         return working
     working['strategy_score'] = (working['公式命中数'] * 28 + working['fund_flow_ratio'].fillna(0) * 5 + (working['黄金强势分割线'] - working['最新价']).clip(lower=0) * 2 + working['换手率'] * 0.50 + working['成交额'] / 100_000_000 * 0.30 - working['risk_score'] * 10).round(2)
@@ -129,8 +130,8 @@ def _graphic_pattern_tag(row: pd.Series) -> str:
 
 def _select_graphic_pattern(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    # 只要满足走势相似且有主要买点之一即可，放宽限制
-    working = working[working['非ST'] & working['主板'] & (working['最新价'] >= 5) & working['shape_similarity'] & (working['main_buy_signal'] | working['main_trial_signal'] | working['short_buy_signal'] | working['build_position_signal'])].copy()
+    # 新增：主板 + 价格 > 27
+    working = working[working['非ST'] & working['主板'] & (working['最新价'] > 27) & working['shape_similarity'] & (working['main_buy_signal'] | working['main_trial_signal'] | working['short_buy_signal'] | working['build_position_signal'])].copy()
     if working.empty:
         return working
     zone_score = pd.Series(0.0, index=working.index)

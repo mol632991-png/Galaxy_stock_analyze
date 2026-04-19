@@ -46,14 +46,14 @@ function renderGlobalDatePicker() {
   if (!container) return;
 
   const dates = state.data.available_dates || [];
-  const latest5 = dates.slice(0, 5);
+  const latest4 = dates.slice(0, 4);
 
   container.innerHTML = '';
 
   const chipList = document.createElement('div');
   chipList.className = 'date-chip-list';
 
-  latest5.forEach(date => {
+  latest4.forEach(date => {
     const btn = document.createElement('button');
     btn.className = `date-chip ${state.globalSelectedDate === date ? 'active' : ''}`;
     btn.textContent = date.split('-').slice(1).join('/'); // 显示 MM/DD

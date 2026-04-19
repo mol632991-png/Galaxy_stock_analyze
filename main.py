@@ -182,9 +182,17 @@ def build_recommendation_section(history_sections: Dict[str, Dict[str, List[Dict
                     by_code[code] = {**item, 'strategy_tags': list(item.get('strategy_tags', []))}
                 else:
                     by_code[code]['strategy_tags'] = sorted(set(by_code[code]['strategy_tags']) | set(item.get('strategy_tags', [])))
-        picked = [item for item in by_code.values() if item.get('pct_change', 0) < 0 and item.get('prev_pct_change', 0) < 0 and item.get('prev2_pct_change', 0) < 0]
-        picked.sort(key=lambda row: (row.get('pct_change', 0), row.get('prev_pct_change', 0), row.get('prev2_pct_change', 0)))
-        recommendations[date_str] = picked[:30]
+        # 筛选逻辑：近三日连续下跌 (pct_change < 0, prev < 0, prev2 < 0)
+        # 补充：基本面优秀 (risk_score <= 1 且 选股得分较高)
+        picked = [item for item in by_code.values() if 
+                  item.get('pct_change', 0) < 0 and 
+                  item.get('prev_pct_change', 0) < 0 and 
+                  item.get('prev2_pct_change', 0) < 0 and
+                  item.get('risk_score', 0) <= 2]
+        
+        # 按照综合评分排序
+        picked.sort(key=lambda row: row.get('selected_score', 0), reverse=True)
+        recommendations[date_str] = picked[:40]
     return recommendations
 
 
