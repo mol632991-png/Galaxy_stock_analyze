@@ -71,10 +71,15 @@ function createDatePicker(sectionKey, container) {
   const dates = state.data.available_dates || [];
   const selectedDate = state.selectedDates[sectionKey] || dates[0];
   const expanded = Boolean(state.expandedSections[sectionKey]);
-  const visibleDates = expanded ? dates : dates.slice(0, 7);
+
+  // 默认显示最近的一天，或者是被选中的那一天
+  // 如果没展开，只显示 1 个日期和 更多 按钮
+  const visibleDates = expanded ? dates : dates.slice(0, 1);
+
   container.innerHTML = '';
   const chips = document.createElement('div');
   chips.className = 'date-chip-list';
+
   visibleDates.forEach((date) => {
     const btn = document.createElement('button');
     btn.className = `date-chip ${selectedDate === date ? 'active' : ''}`;
@@ -85,15 +90,21 @@ function createDatePicker(sectionKey, container) {
     });
     chips.appendChild(btn);
   });
-  const toggle = document.createElement('button');
-  toggle.className = 'toggle-dates';
-  toggle.textContent = expanded ? '收起' : '展开近两个月';
-  toggle.addEventListener('click', () => {
-    state.expandedSections[sectionKey] = !expanded;
-    renderSection(sectionKey);
-  });
-  container.appendChild(chips);
-  container.appendChild(toggle);
+
+  if (dates.length > 1) {
+    const toggle = document.createElement('button');
+    toggle.className = 'toggle-dates';
+    toggle.innerHTML = expanded ? '收起' : '<i>+</i> 更多历史';
+    toggle.title = "筛选近两个月内每一天的选股数据";
+    toggle.addEventListener('click', () => {
+      state.expandedSections[sectionKey] = !expanded;
+      renderSection(sectionKey);
+    });
+    container.appendChild(chips);
+    container.appendChild(toggle);
+  } else {
+    container.appendChild(chips);
+  }
 }
 
 function createTags(tags = []) {
@@ -161,7 +172,16 @@ function renderHotspots() {
   (state.data.sections?.hotspots || []).forEach((item, index) => {
     const row = document.createElement('div');
     row.className = 'hotspot-item';
-    row.innerHTML = `<div><strong>${index + 1}. ${item.name}</strong><div class="hotspot-meta">热度分 ${item.heat_score} / 板块内股票 ${item.stock_count}</div></div><div class="hotspot-meta">平均涨跌幅 ${formatPct(item.avg_pct)}<br />资金流入 ${Number(item.total_amount).toFixed(2)} 亿</div>`;
+    const pctClass = Number(item.avg_pct) >= 0 ? 'pct-rise' : 'pct-fall';
+    row.innerHTML = `
+      <div>
+        <strong>${index + 1}. ${item.name}</strong>
+        <div class="hotspot-meta">龙头：${item.top_stock || '--'}</div>
+      </div>
+      <div class="hotspot-meta" style="text-align: right;">
+        <span class="${pctClass}">${formatPct(item.avg_pct)}</span><br />
+        流入 ${Number(item.total_amount).toFixed(2)} 亿 (${item.fund_ratio}%)
+      </div>`;
     hotspotList.appendChild(row);
   });
 }

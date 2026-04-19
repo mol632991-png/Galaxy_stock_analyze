@@ -126,6 +126,17 @@ def fetch_index_snapshot() -> List[dict]:
     return rows
 
 
+def fetch_sector_fund_flow() -> pd.DataFrame:
+    try:
+        df = ak.stock_sector_fund_flow_rank(indicator="今日", sector_type="行业资金流")
+        if df is not None and not df.empty:
+            df = _clean_numeric(df, ["今日涨跌幅", "主力净流入-净额", "主力净流入-占比"])
+            return df
+    except Exception:
+        pass
+    return pd.DataFrame()
+
+
 def build_top_summary(spot_df: pd.DataFrame) -> dict:
     return {"limit_up_count": int((spot_df["涨跌幅"] >= 9.8).sum()), "gt_7_count": int((spot_df["涨跌幅"] > 7).sum()), "limit_down_count": int((spot_df["涨跌幅"] <= -9.8).sum())}
 

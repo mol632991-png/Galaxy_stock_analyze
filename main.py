@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from data_fetcher import build_stock_dataset, build_top_summary, fetch_index_snapshot, format_fundamental_analysis, format_technical_analysis
+from data_fetcher import build_stock_dataset, build_top_summary, fetch_index_snapshot, fetch_sector_fund_flow, format_fundamental_analysis, format_technical_analysis
 from risk_check import enrich_with_risk
 from strategy import PAGE_STRATEGY_MODES, select_stocks
 
@@ -188,13 +188,22 @@ def build_recommendation_section(history_sections: Dict[str, Dict[str, List[Dict
     return recommendations
 
 
-def build_hotspot_section(risk_df: pd.DataFrame) -> List[Dict[str, Any]]:
-    if risk_df.empty or '所处行业' not in risk_df.columns:
+def build_hotspot_section() -> List[Dict[str, Any]]:
+    df = fetch_sector_fund_flow()
+    if df.empty:
         return []
-    grouped = risk_df.fillna({'所处行业': '未知行业'}).groupby('所处行业', dropna=False).agg(stock_count=('代码', 'count'), avg_pct=('涨跌幅', 'mean'), total_amount=('成交额', 'sum')).reset_index()
-    grouped['heat_score'] = grouped['stock_count'] * 2 + grouped['avg_pct'] * 3 + grouped['total_amount'] / 100000000 * 0.08
-    grouped = grouped.sort_values(by=['heat_score', 'total_amount'], ascending=[False, False]).head(10)
-    return [{'name': row['所处行业'], 'heat_score': round(float(row['heat_score']), 2), 'avg_pct': round(float(row['avg_pct']), 2), 'total_amount': round(float(row['total_amount']) / 100000000, 2), 'stock_count': int(row['stock_count'])} for _, row in grouped.iterrows()]
+    # 按照主力净流入净额排序，取前10个行业
+    df = df.sort_values(by="主力净流入-净额", ascending=False).head(10)
+    results = []
+    for _, row in df.iterrows():
+        results.append({
+            'name': row['名称'],
+            'avg_pct': round(float(row.get('今日涨跌幅', 0) or 0), 2),
+            'total_amount': round(float(row.get('主力净流入-净额', 0) or 0) / 100000000, 2), # 转换成亿
+            'fund_ratio': round(float(row.get('主力净流入-占比', 0) or 0), 2),
+            'top_stock': row.get('今日主力净流入最大股', '--')
+        })
+    return results
 
 
 def build_markdown_report(run_date: str, strategy_results: Dict[str, pd.DataFrame]) -> str:
@@ -236,7 +245,7 @@ def main() -> None:
             'low_absorption': history_sections.get('low_absorption', {}),
             'graphic_pattern': history_sections.get('graphic_pattern', {}),
             'recommendations': build_recommendation_section(history_sections),
-            'hotspots': build_hotspot_section(risk_df),
+            'hotspots': build_hotspot_section(),
         },
     }
     dashboard_data = clean_data(dashboard_data)
