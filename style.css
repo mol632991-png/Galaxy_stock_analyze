@@ -46,11 +46,17 @@ body {
 .panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 20px 20px 12px; }
 .panel-header.compact { padding-bottom: 4px; }
 .panel-header h2 { margin: 0; font-size: 22px; }
-.date-picker { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 240px; }
-.date-chip-list,.tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.date-chip-list { justify-content: flex-end; }
-.date-chip,.toggle-dates { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: var(--text); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
-.date-chip.active { background: linear-gradient(135deg, rgba(255,214,115,.28), rgba(59,130,246,.28)); border-color: rgba(255,214,115,.4); }
+.date-picker { display: flex; align-items: center; gap: 8px; }
+.date-chip-list { display: flex; gap: 6px; }
+.date-chip,.toggle-dates { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: var(--text); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.date-chip.active { background: var(--rise); color: #fff; border-color: var(--rise); box-shadow: 0 0 15px rgba(255,107,107,0.3); }
+.date-chip:hover { background: rgba(255,255,255,0.1); }
+.toggle-dates { display: flex; align-items: center; gap: 4px; border-color: var(--gold); color: var(--gold); }
+.toggle-dates:hover { background: rgba(255,214,115,0.1); }
+.date-picker-wrapper { position: relative; }
+.full-date-dropdown { position: absolute; right: 0; top: 100%; z-index: 1000; background: var(--panel-strong); border: 1px solid var(--gold); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.full-date-dropdown.hidden { display: none; }
+.full-date-dropdown button { font-size: 11px; padding: 4px; }
 .table-scroll { max-height: 420px; overflow: auto; padding: 0 20px 20px; }
 table { width: 100%; border-collapse: collapse; min-width: 1040px; }
 thead th { position: sticky; top: 0; z-index: 2; background: rgba(10,16,30,.98); color: var(--gold); text-align: left; padding: 12px 10px; font-size: 13px; }
@@ -64,8 +70,11 @@ tbody tr:hover { background: rgba(255,255,255,.035); }
 .tag-graphic { background: rgba(34,197,94,.16); color: #a7f3c2; }
 .tag-signal { background: rgba(59,130,246,.16); color: #a5c6ff; }
 .tag-default { background: rgba(148,163,184,.16); color: #d5deef; }
-.hotspot-list { padding: 0 20px 20px; display: grid; gap: 12px; }
-.hotspot-item { padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+.hotspot-list { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 8px; }
+.hotspot-item { padding: 10px 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; border-radius: 10px; }
+.hotspot-item:nth-child(even) { background: rgba(255,255,255,0.02); }
+.hotspot-item strong { margin: 0; font-size: 15px; color: var(--text); }
+.hotspot-item .hotspot-meta { font-size: 12px; }
 .hover-card { position: fixed; right: 24px; bottom: 24px; width: min(420px, calc(100vw - 32px)); padding: 18px; background: var(--panel-strong); z-index: 999; }
 .hover-card.hidden { display: none; }
 .hover-card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }

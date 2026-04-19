@@ -1,103 +1,199 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>银河股票分析</title>
-    <link rel="stylesheet" href="./style.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <section class="topbar-section topbar-date">
-          <span class="eyebrow">交易日</span>
-          <strong id="calendarDate">--</strong>
-        </section>
-        <section class="topbar-section topbar-market">
-          <span class="eyebrow">大盘实时情况</span>
-          <div id="indexCards" class="index-cards"></div>
-        </section>
-        <section class="topbar-section topbar-stats">
-          <span class="eyebrow">核心统计</span>
-          <div class="stats-grid">
-            <div class="stat-card rise"><span>涨停数量</span><strong id="limitUpCount">--</strong></div>
-            <div class="stat-card warm"><span>涨幅大于7%</span><strong id="gt7Count">--</strong></div>
-            <div class="stat-card fall"><span>跌停数量</span><strong id="limitDownCount">--</strong></div>
-          </div>
-        </section>
-      </header>
 
-      <main class="dashboard-grid">
-        <section class="panel" data-section="limit_up_pullback">
-          <div class="panel-header">
-            <div><h2>涨停策略选股股票池</h2><p>涨停选股</p></div>
-            <div class="date-picker" data-role="date-picker"></div>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>股票</th><th>今日价格</th><th>今日涨跌幅</th><th>行业</th><th>昨日涨跌幅</th><th>前日涨跌幅</th><th>基本面分析</th><th>策略标签</th></tr></thead>
-              <tbody data-role="table-body"></tbody>
-            </table>
-          </div>
-        </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>银河股票分析 - 策略仪表盘</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
 
-        <section class="panel" data-section="low_absorption">
-          <div class="panel-header">
-            <div><h2>低吸潜伏选股股票池</h2><p>低吸潜伏</p></div>
-            <div class="date-picker" data-role="date-picker"></div>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>股票</th><th>今日价格</th><th>今日涨跌幅</th><th>行业</th><th>昨日涨跌幅</th><th>前日涨跌幅</th><th>基本面分析</th><th>策略标签</th></tr></thead>
-              <tbody data-role="table-body"></tbody>
-            </table>
-          </div>
-        </section>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <section class="topbar-section topbar-date">
+        <span class="eyebrow">交易日</span>
+        <strong id="calendarDateDisplay">--</strong>
+      </section>
+      <section class="topbar-section topbar-market">
+        <span class="eyebrow">大盘实时情况</span>
+        <div id="indexCards" class="index-cards"></div>
+      </section>
+      <section class="topbar-section topbar-stats">
+        <span class="eyebrow">核心统计</span>
+        <div class="stats-grid">
+          <div class="stat-card rise"><span>涨停数量</span><strong id="limitUpCount">--</strong></div>
+          <div class="stat-card warm"><span>涨幅大于7%</span><strong id="gt7Count">--</strong></div>
+          <div class="stat-card fall"><span>跌停数量</span><strong id="limitDownCount">--</strong></div>
+        </div>
+      </section>
+    </header>
 
-        <section class="panel" data-section="graphic_pattern">
-          <div class="panel-header">
-            <div><h2>图形选股股票池</h2><p>图形选股</p></div>
-            <div class="date-picker" data-role="date-picker"></div>
+    <main class="dashboard-grid">
+      <!-- 涨停回踩：包含全局日期筛选 -->
+      <section class="panel" data-section="limit_up_pullback">
+        <div class="panel-header">
+          <div>
+            <h2>涨停回踩选股股票池</h2>
+            <p>强势股回调低吸</p>
           </div>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>股票</th><th>今日价格</th><th>今日涨跌幅</th><th>行业</th><th>昨日涨跌幅</th><th>前日涨跌幅</th><th>基本面分析</th><th>策略标签</th></tr></thead>
-              <tbody data-role="table-body"></tbody>
-            </table>
+          <div class="date-picker-wrapper">
+            <div class="date-picker" id="globalDatePicker"></div>
           </div>
-        </section>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>股票</th>
+                <th>今日价格</th>
+                <th>今日涨跌幅</th>
+                <th>行业</th>
+                <th>昨日涨跌幅</th>
+                <th>前日涨跌幅</th>
+                <th>基本面分析</th>
+                <th>策略标签</th>
+              </tr>
+            </thead>
+            <tbody data-role="table-body"></tbody>
+          </table>
+        </div>
+      </section>
 
-        <section class="panel panel-composite">
-          <div class="subpanel">
-            <div class="panel-header compact"><div><h2>热点板块</h2><p>近一个月热度与资金流入排名前10</p></div></div>
-            <div class="hotspot-list" id="hotspotList"></div>
+      <!-- 资金流中心 -->
+      <section class="panel" data-section="fund_flow">
+        <div class="panel-header">
+          <div>
+            <h2>资金流策略选股股票池</h2>
+            <p>主力资金净流入排名靠前</p>
           </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>股票</th>
+                <th>今日价格</th>
+                <th>今日涨跌幅</th>
+                <th>行业</th>
+                <th>昨日涨跌幅</th>
+                <th>前日涨跌幅</th>
+                <th>基本面分析</th>
+                <th>策略标签</th>
+              </tr>
+            </thead>
+            <tbody data-role="table-body"></tbody>
+          </table>
+        </div>
+      </section>
 
-          <div class="subpanel" data-section="recommendations">
-            <div class="panel-header">
-              <div><h2>推荐股票</h2><p>每日 15:45 更新，近三日持续下跌</p></div>
-              <div class="date-picker" data-role="date-picker"></div>
+      <!-- 低吸潜伏 -->
+      <section class="panel" data-section="low_absorption">
+        <div class="panel-header">
+          <div>
+            <h2>低吸潜伏选股股票池</h2>
+            <p>多信号共振低吸</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>股票</th>
+                <th>今日价格</th>
+                <th>今日涨跌幅</th>
+                <th>行业</th>
+                <th>昨日涨跌幅</th>
+                <th>前日涨跌幅</th>
+                <th>基本面分析</th>
+                <th>策略标签</th>
+              </tr>
+            </thead>
+            <tbody data-role="table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 图形选股 -->
+      <section class="panel" data-section="graphic_pattern">
+        <div class="panel-header">
+          <div>
+            <h2>图形形态选股股票池</h2>
+            <p>底部修复与筑底形态</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>股票</th>
+                <th>今日价格</th>
+                <th>今日涨跌幅</th>
+                <th>行业</th>
+                <th>昨日涨跌幅</th>
+                <th>前日涨跌幅</th>
+                <th>基本面分析</th>
+                <th>策略标签</th>
+              </tr>
+            </thead>
+            <tbody data-role="table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 右侧侧边栏布局：热点板块 + 每日关注 -->
+      <section class="panel panel-composite">
+        <div class="subpanel">
+          <div class="panel-header compact">
+            <div>
+              <h2>主力流入热点板块</h2>
+              <p>今日主力资金净流入 Top 10</p>
             </div>
-            <div class="table-scroll">
-              <table>
-                <thead><tr><th>股票</th><th>今日价格</th><th>今日涨跌幅</th><th>行业</th><th>昨日涨跌幅</th><th>前日涨跌幅</th><th>技术面分析</th><th>策略标签</th></tr></thead>
-                <tbody data-role="table-body"></tbody>
-              </table>
+          </div>
+          <div class="hotspot-list" id="hotspotList"></div>
+        </div>
+
+        <div class="subpanel" data-section="recommendations">
+          <div class="panel-header">
+            <div>
+              <h2>每日稳健关注</h2>
+              <p>近三日持续下跌且有支撑</p>
             </div>
           </div>
-        </section>
-      </main>
-    </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>股票</th>
+                  <th>今日价格</th>
+                  <th>今日涨跌幅</th>
+                  <th>行业</th>
+                  <th>昨日涨跌幅</th>
+                  <th>前日涨跌幅</th>
+                  <th>技术面分析</th>
+                  <th>策略标签</th>
+                </tr>
+              </thead>
+              <tbody data-role="table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
-    <aside id="hoverCard" class="hover-card hidden">
-      <div class="hover-card-header"><strong id="hoverTitle">--</strong><span id="hoverCode">--</span></div>
-      <div class="hover-card-body">
-        <p><span>基本面：</span><span id="hoverFundamental">--</span></p>
-        <p><span>技术面：</span><span id="hoverTechnical">--</span></p>
-        <div><span>风险点：</span><ul id="hoverRisks"></ul></div>
+  <aside id="hoverCard" class="hover-card hidden">
+    <div class="hover-card-header"><strong id="hoverTitle">--</strong><span id="hoverCode">--</span></div>
+    <div class="hover-card-body">
+      <p><span>基本面：</span><span id="hoverFundamental">--</span></p>
+      <p><span>技术面：</span><span id="hoverTechnical">--</span></p>
+      <div><span>风险点：</span>
+        <ul id="hoverRisks"></ul>
       </div>
-    </aside>
+    </div>
+  </aside>
 
-    <script src="./app.js"></script>
-  </body>
+  <script src="./app.js"></script>
+</body>
+
 </html>

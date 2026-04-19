@@ -4,9 +4,9 @@ from typing import Callable, Dict, List, Set
 
 import pandas as pd
 
-PAGE_STRATEGY_MODES = ['limit_up_pullback', 'low_absorption', 'graphic_pattern']
-MODE_ALIASES = {'base': 'quality_growth', 'original': 'quality_growth', 'limit_up': 'limit_up_pullback', 'low_absorb': 'low_absorption', 'graphic': 'graphic_pattern'}
-BASE_CONFIG: Dict[str, float] = {'min_price': 5.0, 'min_turnover_rate': 0.8, 'min_amount': 80_000_000, 'max_risk_score': 3.0, 'top_n': 40}
+PAGE_STRATEGY_MODES = ['limit_up_pullback', 'fund_flow', 'low_absorption', 'graphic_pattern']
+MODE_ALIASES = {'base': 'quality_growth', 'original': 'quality_growth', 'limit_up': 'limit_up_pullback', 'low_absorb': 'low_absorption', 'graphic': 'graphic_pattern', 'flow': 'fund_flow'}
+BASE_CONFIG: Dict[str, float] = {'min_price': 5.0, 'min_turnover_rate': 0.8, 'min_amount': 50_000_000, 'max_risk_score': 3.5, 'top_n': 50}
 
 
 def _normalize_modes(mode: str) -> List[str]:
@@ -68,12 +68,23 @@ def _select_quality_growth(df: pd.DataFrame) -> pd.DataFrame:
 
 def _select_limit_up_pullback(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    working['支撑线80'] = working['low_120'] + (working['high_120'] - working['low_120']) * 0.8
-    working = working[working['主板'] & (working['上市天数'] > 250) & (working['最新价'] > 5) & (working['涨跌幅'] > 9) & (working['最新价'] < working['支撑线80'])].copy()
+    # 涨停回踩逻辑：近期(5日内)有过涨停，目前正在回踩或震荡，且价格还没突破前高
+    working = working[working['主板'] & (working['上市天数'] > 120) & (working['had_recent_limit_up'] == True) & (working['最新价'] < working['high_120'] * 0.98)].copy()
     if working.empty:
         return working
-    working['strategy_score'] = (((working['涨跌幅'] - 9) * 12) + (working['支撑线80'] - working['最新价']).clip(lower=0) * 2.5 + working['换手率'] * 0.60 + working['成交额'] / 100_000_000 * 0.50 - working['risk_score'] * 10).round(2)
-    return _finalize(working, 'limit_up_pullback', lambda _: '涨停选股', lambda _: '涨停强势、主板、上市满一年，且价格位于120日区间80%压制线下方。')
+    # 评分逻辑：近期涨停强度 + 离底部距离 + 资金流
+    working['strategy_score'] = (working['had_recent_limit_up'].astype(int) * 30 + (working['high_120'] / working['最新价'] - 1.0) * 15 + working['fund_flow_ratio'].fillna(0) * 5 + (working['最新价'] / working['low_120'] - 1.0) * 5 - working['risk_score'] * 8).round(2)
+    return _finalize(working, 'limit_up_pullback', lambda _: '涨停选股', lambda _: '近期出现涨停强势信号，目前进入回踩巩固期，具备二次起跳潜力。')
+
+
+def _select_fund_flow(df: pd.DataFrame) -> pd.DataFrame:
+    working = _base_filter(df)
+    # 资金流逻辑：主力净流入额和占比双高，且当日涨幅不宜过高（防止追高）
+    working = working[(working['今日主力净流入-占比'] > 5) & (working['今日主力净流入-净额'] > 10000000) & (working['涨跌幅'] < 7)].copy()
+    if working.empty:
+        return working
+    working['strategy_score'] = (working['今日主力净流入-占比'] * 3.5 + working['今日主力净流入-净额'] / 1000000 * 0.5 + working['成交额'] / 50000000 * 2 - working['risk_score'] * 10).round(2)
+    return _finalize(working, 'fund_flow', lambda _: '资金流', lambda _: '主力资金大规模净流入，机构/大单扫盘迹象明显，具备资金推动动力。')
 
 
 def _low_absorption_tag(row: pd.Series) -> str:
@@ -91,9 +102,10 @@ def _low_absorption_tag(row: pd.Series) -> str:
 
 def _select_low_absorption(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    working['黄金强势分割线'] = working['hour_low_120'] + (working['hour_high_120'] - working['hour_low_120']) * 0.26
+    working['黄金强势分割线'] = working['hour_low_120'] + (working['hour_high_120'] - working['hour_low_120']) * 0.38
     working['公式命中数'] = working['signal_fund_flow'].astype(int) + working['signal_upward_10d'].astype(int) + working['signal_short_buy_20d'].astype(int) + working['signal_hourly_60_3pct'].astype(int)
-    working = working[working['主板'] & (working['最新价'] > 27) & (working['最新价'] < working['黄金强势分割线']) & (working['公式命中数'] >= 1)].copy()
+    # 放宽价格限制到 5 元
+    working = working[working['主板'] & (working['最新价'] >= 5) & (working['最新价'] < working['黄金强势分割线']) & (working['公式命中数'] >= 1)].copy()
     if working.empty:
         return working
     working['strategy_score'] = (working['公式命中数'] * 28 + working['fund_flow_ratio'].fillna(0) * 5 + (working['黄金强势分割线'] - working['最新价']).clip(lower=0) * 2 + working['换手率'] * 0.50 + working['成交额'] / 100_000_000 * 0.30 - working['risk_score'] * 10).round(2)
@@ -117,7 +129,8 @@ def _graphic_pattern_tag(row: pd.Series) -> str:
 
 def _select_graphic_pattern(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    working = working[working['非ST'] & working['主板'] & (working['最新价'] > 27) & working['shape_similarity'] & (working['main_buy_signal'] | working['main_trial_signal']) & (working['short_buy_signal'] | working['build_position_signal'])].copy()
+    # 只要满足走势相似且有主要买点之一即可，放宽限制
+    working = working[working['非ST'] & working['主板'] & (working['最新价'] >= 5) & working['shape_similarity'] & (working['main_buy_signal'] | working['main_trial_signal'] | working['short_buy_signal'] | working['build_position_signal'])].copy()
     if working.empty:
         return working
     zone_score = pd.Series(0.0, index=working.index)
@@ -127,7 +140,7 @@ def _select_graphic_pattern(df: pd.DataFrame) -> pd.DataFrame:
     return _finalize(working, 'graphic_pattern', _graphic_pattern_tag, lambda _: '主图买点与副图短买/建仓共振，同时走势接近下跌后低位筑底修复形态。')
 
 
-STRATEGY_HANDLERS = {'quality_growth': _select_quality_growth, 'limit_up_pullback': _select_limit_up_pullback, 'low_absorption': _select_low_absorption, 'graphic_pattern': _select_graphic_pattern}
+STRATEGY_HANDLERS = {'quality_growth': _select_quality_growth, 'limit_up_pullback': _select_limit_up_pullback, 'fund_flow': _select_fund_flow, 'low_absorption': _select_low_absorption, 'graphic_pattern': _select_graphic_pattern}
 
 
 def select_stocks(df: pd.DataFrame, mode: str = 'quality_growth') -> pd.DataFrame:

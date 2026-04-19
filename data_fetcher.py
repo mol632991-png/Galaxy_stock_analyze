@@ -137,6 +137,18 @@ def fetch_sector_fund_flow() -> pd.DataFrame:
     return pd.DataFrame()
 
 
+def fetch_individual_fund_flow_rank() -> pd.DataFrame:
+    try:
+        df = ak.stock_individual_fund_flow_rank(indicator="今日")
+        if df is not None and not df.empty:
+            df["代码"] = df["代码"].astype(str).str.zfill(6)
+            df = _clean_numeric(df, ["最新价", "今日涨跌幅", "今日主力净流入-净额", "今日主力净流入-占比"])
+            return df
+    except Exception:
+        pass
+    return pd.DataFrame()
+
+
 def build_top_summary(spot_df: pd.DataFrame) -> dict:
     return {"limit_up_count": int((spot_df["涨跌幅"] >= 9.8).sum()), "gt_7_count": int((spot_df["涨跌幅"] > 7).sum()), "limit_down_count": int((spot_df["涨跌幅"] <= -9.8).sum())}
 
@@ -318,13 +330,20 @@ def _fetch_history_indicator(code: str, lookback_days: int = 420) -> Optional[di
     shape_features = _compute_shape_features(hist_df)
     hourly = _fetch_hourly_signals(code)
     fund_flow_ratio = _fetch_fund_flow_ratio(code)
+    
+    # 增加：检测近5日内是否出现过涨停 (含今日)
+    # 中国主板涨停一般 >= 9.8%
+    recent_hist = hist_df.tail(6)
+    had_limit_up = bool((recent_hist['pct_change'] >= 9.8).any())
+    
     return {
         "代码": code,
         "上市天数": int(len(hist_df)),
         "close_hist": round(float(latest["close"]), 4),
         "fund_flow_ratio": fund_flow_ratio,
-        "signal_fund_flow": bool((fund_flow_ratio > 0.2) and (float(latest["close"]) > 17) and (float(latest.get("pct_change", 0) or 0) < 5)),
-        "signal_hourly_60_3pct": bool(hourly["hour_up_tri_10d"] and float(latest["close"]) > 40),
+        "had_recent_limit_up": had_limit_up,
+        "signal_fund_flow": bool((fund_flow_ratio > 0.15) and (float(latest.get("pct_change", 0) or 0) < 6)),
+        "signal_hourly_60_3pct": bool(hourly["hour_up_tri_10d"] and float(latest["close"]) > 10),
         **pattern_signals,
         **shape_features,
         **hourly,
@@ -363,6 +382,15 @@ def build_stock_dataset(extra_codes: Optional[Sequence[str]] = None) -> Tuple[pd
     merged["市盈率-动态"] = merged["市盈率-动态"].replace([np.inf, -np.inf], np.nan).fillna(-1)
     merged["市净率"] = merged["市净率"].replace([np.inf, -np.inf], np.nan).fillna(-1)
     merged["coarse_score"] = merged["成交额"] / 100_000_000 * 0.20 + merged["换手率"].fillna(0) * 0.15 + merged["60日涨跌幅"].fillna(0) * 0.10 + merged["营业总收入-同比增长"] * 0.15 + merged["净利润-同比增长"] * 0.20 + merged["净资产收益率"] * 0.20
+    
+    # 整合：个股资金流排名
+    ff_rank_df = fetch_individual_fund_flow_rank()
+    if not ff_rank_df.empty:
+        # 将 top 100 资金流个股加入 seed
+        top_ff_codes = ff_rank_df["代码"].head(100).tolist()
+        extra_codes = list(set((extra_codes or []) + top_ff_codes))
+        merged = merged.merge(ff_rank_df[['代码', '今日主力净流入-净额', '今日主力净流入-占比']], on="代码", how="left")
+    
     seed = _pick_analysis_seed(merged, extra_codes or [])
     technical_df = fetch_technical_indicators(seed["代码"].tolist())
     if technical_df.empty:

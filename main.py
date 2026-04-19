@@ -242,6 +242,7 @@ def main() -> None:
         'available_dates': sorted({date_str for section in history_sections.values() for date_str in section.keys()}, reverse=True),
         'sections': {
             'limit_up_pullback': history_sections.get('limit_up_pullback', {}),
+            'fund_flow': history_sections.get('fund_flow', {}),
             'low_absorption': history_sections.get('low_absorption', {}),
             'graphic_pattern': history_sections.get('graphic_pattern', {}),
             'recommendations': build_recommendation_section(history_sections),
