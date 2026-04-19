@@ -276,9 +276,9 @@ def _compute_shape_features(hist_df: pd.DataFrame) -> dict:
     swing_high = float(recent["high"].max())
     swing_low = float(recent["low"].min())
     price_range = max(swing_high - swing_low, 1e-6)
+    fib_500 = swing_high - price_range * 0.5
     fib_618 = swing_high - price_range * 0.618
     fib_809 = swing_high - price_range * 0.809
-    fib_500 = swing_high - price_range * 0.5
     ma5 = float(close.rolling(5).mean().iloc[-1])
     ma10 = float(close.rolling(10).mean().iloc[-1])
     ma20 = float(close.rolling(20).mean().iloc[-1])
@@ -381,7 +381,13 @@ def build_stock_dataset(extra_codes: Optional[Sequence[str]] = None) -> Tuple[pd
     merged["每股经营现金流量"] = merged["每股经营现金流量"].fillna(0)
     merged["市盈率-动态"] = merged["市盈率-动态"].replace([np.inf, -np.inf], np.nan).fillna(-1)
     merged["市净率"] = merged["市净率"].replace([np.inf, -np.inf], np.nan).fillna(-1)
+    
+    # 构建热度评分
     merged["coarse_score"] = merged["成交额"] / 100_000_000 * 0.20 + merged["换手率"].fillna(0) * 0.15 + merged["60日涨跌幅"].fillna(0) * 0.10 + merged["营业总收入-同比增长"] * 0.15 + merged["净利润-同比增长"] * 0.20 + merged["净资产收益率"] * 0.20
+    
+    # 强制将今日所有涨停股加入分析种子
+    limit_ups = merged[merged["涨跌幅"] >= 9.8]["代码"].tolist()
+    extra_codes = list(set((extra_codes or []) + limit_ups))
     
     # 整合：个股资金流排名
     ff_rank_df = fetch_individual_fund_flow_rank()
