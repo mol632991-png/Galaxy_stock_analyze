@@ -68,19 +68,19 @@ def _select_quality_growth(df: pd.DataFrame) -> pd.DataFrame:
 
 def _select_limit_up_pullback(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    # 恢复筛选当天涨停股票 (涨跌幅 > 9.8)
-    # 条件：主板、价格 > 5、价格在黄金分割线 0.8 以下 (这里使用 low_120+(high_120-low_120)*0.8)
+    # 筛选当天涨停股票 (涨跌幅 >= 9.8)
+    # 条件：主板、价格 > 5、价格在黄金分割线 0.8 以下 (low_120 + 0.8*(high-low))
     working['支撑线'] = working['low_120'] + (working['high_120'] - working['low_120']) * 0.8
     working = working[working['主板'] & (working['涨跌幅'] >= 9.8) & (working['最新价'] > 5) & (working['最新价'] < working['支撑线'])].copy()
     if working.empty:
         return working
     working['strategy_score'] = (working['涨跌幅'] * 5 + working['成交额'] / 50000000 * 2 - working['risk_score'] * 10).round(2)
-    return _finalize(working, 'limit_up_pullback', lambda _: '今日涨停', lambda _: '当日涨停强势股票，且价格尚未突破120日高点压制区间。')
+    return _finalize(working, 'limit_up_pullback', lambda _: '今日涨停', lambda _: '当日涨停强势股票，且价格尚未突破120日高点压制区间（0.8黄金分割线以下）。')
 
 
 def _select_fund_flow(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    # 新增：主板 + 价格 > 27
+    # 主板 + 价格 > 27 + 主力大规模净流入
     working = working[working['主板'] & (working['最新价'] > 27) & (working['今日主力净流入-占比'] > 5) & (working['今日主力净流入-净额'] > 8000000) & (working['涨跌幅'] < 7)].copy()
     if working.empty:
         return working
@@ -103,14 +103,29 @@ def _low_absorption_tag(row: pd.Series) -> str:
 
 def _select_low_absorption(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    working['黄金强势分割线'] = working['hour_low_120'] + (working['hour_high_120'] - working['hour_low_120']) * 0.38
-    working['公式命中数'] = working['signal_fund_flow'].astype(int) + working['signal_upward_10d'].astype(int) + working['signal_short_buy_20d'].astype(int) + working['signal_hourly_60_3pct'].astype(int)
-    # 满足主板 + 价格 > 27 (这是用户要求的硬性限制)
-    working = working[working['主板'] & (working['最新价'] > 27) & (working['最新价'] < working['黄金强势分割线']) & (working['公式命中数'] >= 1)].copy()
+    # 硬性条件：主板 + 价格 > 27
+    working = working[working['主板'] & (working['最新价'] > 27)].copy()
     if working.empty:
         return working
-    working['strategy_score'] = (working['公式命中数'] * 28 + working['fund_flow_ratio'].fillna(0) * 5 + (working['黄金强势分割线'] - working['最新价']).clip(lower=0) * 2 + working['换手率'] * 0.50 + working['成交额'] / 100_000_000 * 0.30 - working['risk_score'] * 10).round(2)
-    return _finalize(working, 'low_absorption', _low_absorption_tag, lambda _: '多套低吸信号共振，主板、股价大于27元，且位于60分钟黄金强势分割线下方。')
+    
+    # 三种分支逻辑：
+    # 1. 60分钟周期：命中 60min 信号且价格在 0.26 黄金分割线以下
+    line_026 = working['hour_low_120'] + (working['hour_high_120'] - working['hour_low_120']) * 0.26
+    cond_60min = (working['signal_hourly_60_3pct'] == True) & (working['最新价'] < line_026)
+    
+    # 2. 20日线短买
+    cond_20d = (working['signal_short_buy_20d'] == True)
+    
+    # 3. 10日上扬
+    cond_10d = (working['signal_upward_10d'] == True)
+    
+    working = working[cond_60min | cond_20d | cond_10d].copy()
+    if working.empty:
+        return working
+        
+    working['formula_hits'] = cond_60min.astype(int) + cond_20d.astype(int) + cond_10d.astype(int)
+    working['strategy_score'] = (working['formula_hits'] * 30 + working['fund_flow_ratio'].fillna(0) * 5 + working['换手率'] * 0.50 + working['成交额'] / 100_000_000 * 0.30 - working['risk_score'] * 10).round(2)
+    return _finalize(working, 'low_absorption', _low_absorption_tag, lambda _: '主板高价股低吸：满足60分钟周期(0.26线以下)、20日短买或10日上扬中的至少一种逻辑。')
 
 
 def _graphic_pattern_tag(row: pd.Series) -> str:
@@ -130,15 +145,15 @@ def _graphic_pattern_tag(row: pd.Series) -> str:
 
 def _select_graphic_pattern(df: pd.DataFrame) -> pd.DataFrame:
     working = _base_filter(df)
-    # 新增：主板 + 价格 > 27
-    working = working[working['非ST'] & working['主板'] & (working['最新价'] > 27) & working['shape_similarity'] & (working['main_buy_signal'] | working['main_trial_signal'] | working['short_buy_signal'] | working['build_position_signal'])].copy()
+    # 主板 + 价格 > 27 + 非ST (base_filter已经包含非ST)
+    working = working[working['主板'] & (working['最新价'] > 27) & working['shape_similarity'] & (working['main_buy_signal'] | working['main_trial_signal'] | working['short_buy_signal'] | working['build_position_signal'])].copy()
     if working.empty:
         return working
     zone_score = pd.Series(0.0, index=working.index)
     zone_score += working['close_to_low_zone'].astype(int) * 15
     zone_score += (((working['最新价'] >= working['fib_618'] * 0.97) & (working['最新价'] <= working['fib_809'] * 1.03)).astype(int) * 15)
     working['strategy_score'] = (working['main_buy_signal'].astype(int) * 22 + working['main_trial_signal'].astype(int) * 10 + working['short_buy_signal'].astype(int) * 20 + working['build_position_signal'].astype(int) * 15 + working['shape_similarity'].astype(int) * 20 + zone_score + working['drawdown_ratio'].clip(lower=10, upper=60) * 0.60 + working['换手率'] * 0.40 + working['成交额'] / 100_000_000 * 0.40 - working['risk_score'] * 10).round(2)
-    return _finalize(working, 'graphic_pattern', _graphic_pattern_tag, lambda _: '主图买点与副图短买/建仓共振，同时走势接近下跌后低位筑底修复形态。')
+    return _finalize(working, 'graphic_pattern', _graphic_pattern_tag, lambda _: '主图买点与副图共振，同时走势接近下跌后低位修复形态（主板高价股）。')
 
 
 STRATEGY_HANDLERS = {'quality_growth': _select_quality_growth, 'limit_up_pullback': _select_limit_up_pullback, 'fund_flow': _select_fund_flow, 'low_absorption': _select_low_absorption, 'graphic_pattern': _select_graphic_pattern}

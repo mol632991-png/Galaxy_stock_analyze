@@ -137,16 +137,8 @@ body {
   gap: 18px;
 }
 
-.panel,
-.subpanel {
-  overflow: hidden;
-}
-
-.panel {
-  min-height: 520px;
-}
-
 .panel-composite {
+  grid-column: 1 / span 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
@@ -154,6 +146,15 @@ body {
   border: none;
   box-shadow: none;
   min-height: auto;
+}
+
+.panel,
+.subpanel {
+  overflow: hidden;
+}
+
+.panel {
+  min-height: 520px;
 }
 
 .subpanel {
